@@ -1,0 +1,846 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 46,
+   "id": "ccb9d16b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pickle\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "from sklearn.experimental import enable_iterative_imputer\n",
+    "from sklearn.model_selection import KFold\n",
+    "from sklearn.cluster import KMeans\n",
+    "from sklearn.preprocessing import MinMaxScaler\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "from sklearn import tree\n",
+    "from sklearn import metrics\n",
+    "import plotly as py\n",
+    "import plotly.graph_objs as go\n",
+    "import matplotlib.pyplot as plt \n",
+    "import seaborn as sns\n",
+    "from sklearn import decomposition\n",
+    "from sklearn.decomposition import PCA\n",
+    "from sklearn.metrics import silhouette_score\n",
+    "from sklearn.metrics import classification_report, confusion_matrix\n",
+    "from sklearn.metrics import roc_curve,roc_auc_score, precision_score, recall_score,f1_score\n",
+    "from sklearn.metrics import make_scorer, accuracy_score\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from sklearn.datasets import load_iris\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "from sklearn.manifold import TSNE"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "ad6e9b86",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Read file\n",
+    "data = pd.read_csv(\"clean_data.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "4e9880d7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(6029, 17)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Unnamed: 0</th>\n",
+       "      <th>molecule_chembl_id</th>\n",
+       "      <th>canonical_smiles</th>\n",
+       "      <th>standard_type</th>\n",
+       "      <th>standard_value</th>\n",
+       "      <th>standard_units</th>\n",
+       "      <th>MW</th>\n",
+       "      <th>HeavyAtomMolWt</th>\n",
+       "      <th>LogP</th>\n",
+       "      <th>MolMR</th>\n",
+       "      <th>NumHDonors</th>\n",
+       "      <th>NumHAcceptors</th>\n",
+       "      <th>NumAtoms</th>\n",
+       "      <th>AR</th>\n",
+       "      <th>TPSA</th>\n",
+       "      <th>RB</th>\n",
+       "      <th>bioactivity_class</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0</td>\n",
+       "      <td>CHEMBL1790051</td>\n",
+       "      <td>COC(=O)[C@@H]1C2CC[C@H](C[C@@H]1c1ccccc1)N2C.Cl</td>\n",
+       "      <td>Ki</td>\n",
+       "      <td>33.0</td>\n",
+       "      <td>nM</td>\n",
+       "      <td>295.810</td>\n",
+       "      <td>273.634</td>\n",
+       "      <td>2.8477</td>\n",
+       "      <td>81.1270</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>29.54</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>CHEMBL1790051</td>\n",
+       "      <td>COC(=O)[C@@H]1C2CC[C@H](C[C@@H]1c1ccccc1)N2C.Cl</td>\n",
+       "      <td>Ki</td>\n",
+       "      <td>314.0</td>\n",
+       "      <td>nM</td>\n",
+       "      <td>295.810</td>\n",
+       "      <td>273.634</td>\n",
+       "      <td>2.8477</td>\n",
+       "      <td>81.1270</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>29.54</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>2</td>\n",
+       "      <td>CHEMBL370805</td>\n",
+       "      <td>COC(=O)[C@H]1[C@@H](OC(=O)c2ccccc2)C[C@@H]2CC[...</td>\n",
+       "      <td>Ki</td>\n",
+       "      <td>32.0</td>\n",
+       "      <td>nM</td>\n",
+       "      <td>303.358</td>\n",
+       "      <td>282.190</td>\n",
+       "      <td>1.8677</td>\n",
+       "      <td>80.3415</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>55.84</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>3</td>\n",
+       "      <td>CHEMBL370805</td>\n",
+       "      <td>COC(=O)[C@H]1[C@@H](OC(=O)c2ccccc2)C[C@@H]2CC[...</td>\n",
+       "      <td>Ki</td>\n",
+       "      <td>388.0</td>\n",
+       "      <td>nM</td>\n",
+       "      <td>303.358</td>\n",
+       "      <td>282.190</td>\n",
+       "      <td>1.8677</td>\n",
+       "      <td>80.3415</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>55.84</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>4</td>\n",
+       "      <td>CHEMBL333280</td>\n",
+       "      <td>CN1CCC(O)(c2ccc(Cl)c(Cl)c2)C([C@@H](O)c2ccc(Cl...</td>\n",
+       "      <td>Ki</td>\n",
+       "      <td>4140.0</td>\n",
+       "      <td>nM</td>\n",
+       "      <td>435.178</td>\n",
+       "      <td>416.026</td>\n",
+       "      <td>5.1731</td>\n",
+       "      <td>107.3846</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>43.70</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   Unnamed: 0 molecule_chembl_id  \\\n",
+       "0           0      CHEMBL1790051   \n",
+       "1           1      CHEMBL1790051   \n",
+       "2           2       CHEMBL370805   \n",
+       "3           3       CHEMBL370805   \n",
+       "4           4       CHEMBL333280   \n",
+       "\n",
+       "                                    canonical_smiles standard_type  \\\n",
+       "0    COC(=O)[C@@H]1C2CC[C@H](C[C@@H]1c1ccccc1)N2C.Cl            Ki   \n",
+       "1    COC(=O)[C@@H]1C2CC[C@H](C[C@@H]1c1ccccc1)N2C.Cl            Ki   \n",
+       "2  COC(=O)[C@H]1[C@@H](OC(=O)c2ccccc2)C[C@@H]2CC[...            Ki   \n",
+       "3  COC(=O)[C@H]1[C@@H](OC(=O)c2ccccc2)C[C@@H]2CC[...            Ki   \n",
+       "4  CN1CCC(O)(c2ccc(Cl)c(Cl)c2)C([C@@H](O)c2ccc(Cl...            Ki   \n",
+       "\n",
+       "   standard_value standard_units       MW  HeavyAtomMolWt    LogP     MolMR  \\\n",
+       "0            33.0             nM  295.810         273.634  2.8477   81.1270   \n",
+       "1           314.0             nM  295.810         273.634  2.8477   81.1270   \n",
+       "2            32.0             nM  303.358         282.190  1.8677   80.3415   \n",
+       "3           388.0             nM  303.358         282.190  1.8677   80.3415   \n",
+       "4          4140.0             nM  435.178         416.026  5.1731  107.3846   \n",
+       "\n",
+       "   NumHDonors  NumHAcceptors  NumAtoms   AR   TPSA   RB  bioactivity_class  \n",
+       "0         0.0            3.0      20.0  1.0  29.54  2.0                  0  \n",
+       "1         0.0            3.0      20.0  1.0  29.54  2.0                  1  \n",
+       "2         0.0            5.0      22.0  1.0  55.84  3.0                  0  \n",
+       "3         0.0            5.0      22.0  1.0  55.84  3.0                  1  \n",
+       "4         2.0            3.0      26.0  2.0  43.70  3.0                  1  "
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "print(data.shape)\n",
+    "data.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "446fcee5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Factorize activity as 0 and 1 and other categories\n",
+    "data['bioactivity_class'], mapping = data['bioactivity_class'].factorize()\n",
+    "data['bioactivity_class']\n",
+    "data['standard_units'], mapping = data['standard_units'].factorize()\n",
+    "data['standard_type'], mapping = data['standard_type'].factorize()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "id": "186cb104",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Split the data to predictor and attributes\n",
+    "\n",
+    "X = data.iloc[:,3:15]\n",
+    "y = data.iloc[:,16]\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "8a724ffe",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>standard_type</th>\n",
+       "      <th>standard_value</th>\n",
+       "      <th>standard_units</th>\n",
+       "      <th>MW</th>\n",
+       "      <th>HeavyAtomMolWt</th>\n",
+       "      <th>LogP</th>\n",
+       "      <th>MolMR</th>\n",
+       "      <th>NumHDonors</th>\n",
+       "      <th>NumHAcceptors</th>\n",
+       "      <th>NumAtoms</th>\n",
+       "      <th>AR</th>\n",
+       "      <th>TPSA</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0</td>\n",
+       "      <td>33.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>295.810</td>\n",
+       "      <td>273.634</td>\n",
+       "      <td>2.8477</td>\n",
+       "      <td>81.1270</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>29.54</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0</td>\n",
+       "      <td>314.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>295.810</td>\n",
+       "      <td>273.634</td>\n",
+       "      <td>2.8477</td>\n",
+       "      <td>81.1270</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>20.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>29.54</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0</td>\n",
+       "      <td>32.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>303.358</td>\n",
+       "      <td>282.190</td>\n",
+       "      <td>1.8677</td>\n",
+       "      <td>80.3415</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>55.84</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0</td>\n",
+       "      <td>388.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>303.358</td>\n",
+       "      <td>282.190</td>\n",
+       "      <td>1.8677</td>\n",
+       "      <td>80.3415</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>55.84</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>0</td>\n",
+       "      <td>4140.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>435.178</td>\n",
+       "      <td>416.026</td>\n",
+       "      <td>5.1731</td>\n",
+       "      <td>107.3846</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>43.70</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   standard_type  standard_value  standard_units       MW  HeavyAtomMolWt  \\\n",
+       "0              0            33.0               0  295.810         273.634   \n",
+       "1              0           314.0               0  295.810         273.634   \n",
+       "2              0            32.0               0  303.358         282.190   \n",
+       "3              0           388.0               0  303.358         282.190   \n",
+       "4              0          4140.0               0  435.178         416.026   \n",
+       "\n",
+       "     LogP     MolMR  NumHDonors  NumHAcceptors  NumAtoms   AR   TPSA  \n",
+       "0  2.8477   81.1270         0.0            3.0      20.0  1.0  29.54  \n",
+       "1  2.8477   81.1270         0.0            3.0      20.0  1.0  29.54  \n",
+       "2  1.8677   80.3415         0.0            5.0      22.0  1.0  55.84  \n",
+       "3  1.8677   80.3415         0.0            5.0      22.0  1.0  55.84  \n",
+       "4  5.1731  107.3846         2.0            3.0      26.0  2.0  43.70  "
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "2bc34630",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0    0\n",
+       "1    1\n",
+       "2    0\n",
+       "3    1\n",
+       "4    1\n",
+       "Name: bioactivity_class, dtype: int64"
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "y.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "835d51f2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "53ea9cd6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#####TILL THE ABOVE CELL, EVERYTHING IS PRETTY MUCH COMMON FOR ALL MODELS####"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "62aa890a",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Test score: 0.96\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "tree = DecisionTreeClassifier(max_depth=2).fit(X_train, y_train)\n",
+    "pred_tree = tree.predict(X_test)\n",
+    "print(\"Test score: {:.2f}\".format(tree.score(X_test, y_test)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "97d741c9",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Confusion matrix:\n",
+      "[[ 360   57]\n",
+      " [   0 1091]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.metrics import confusion_matrix\n",
+    "\n",
+    "confusion = confusion_matrix(y_test, pred_tree)\n",
+    "print(\"Confusion matrix:\\n{}\".format(confusion))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "b224418a",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "f1 score tree for >50K: 0.96\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"f1 score tree for >50K: {:.2f}\".format(f1_score(y_test, pred_tree,average=\"weighted\")))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "ed94fac5",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "              precision    recall  f1-score   support\n",
+      "\n",
+      "           0       1.00      0.86      0.93       417\n",
+      "           1       0.95      1.00      0.97      1091\n",
+      "\n",
+      "    accuracy                           0.96      1508\n",
+      "   macro avg       0.98      0.93      0.95      1508\n",
+      "weighted avg       0.96      0.96      0.96      1508\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.metrics import classification_report\n",
+    "print(classification_report(y_test, pred_tree\n",
+    "                            ))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "a45dac27",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: 0.9998341350140986\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Build classification model - Iteration 1\n",
+    "tree_clf = DecisionTreeClassifier(min_samples_leaf=4,max_depth=4,random_state=42)\n",
+    "tree_clf.fit(X, y)\n",
+    "print(\"Accuracy:\",metrics.accuracy_score(y, tree_clf.predict(X)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "ee81e22b",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: 0.9998341350140986\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Build classification model - Iteration 2\n",
+    "tree_clf2 = DecisionTreeClassifier(min_samples_leaf=4, random_state=42)\n",
+    "tree_clf2.fit(X, y)\n",
+    "print(\"Accuracy:\",metrics.accuracy_score(y, tree_clf2.predict(X)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "id": "32d758eb",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: 0.9998341350140986\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Build classification model - Iteration 2\n",
+    "tree_clf3 = DecisionTreeClassifier(min_samples_leaf=1,max_depth=1, random_state=42)\n",
+    "tree_clf3.fit(X, y)\n",
+    "print(\"Accuracy:\",metrics.accuracy_score(y, tree_clf2.predict(X)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "841069be",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Cross-validation scores: [1.         1.         1.         0.84140677]\n"
+     ]
+    }
+   ],
+   "source": [
+    "#using cross validation:\n",
+    "\n",
+    "tree_clf4 = DecisionTreeClassifier(min_samples_leaf=4, random_state=42)\n",
+    "tree_scores = cross_val_score(tree_clf4, X, y, scoring=\"accuracy\",cv=4)\n",
+    "\n",
+    "print(\"Cross-validation scores: {}\".format(tree_scores))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "id": "85b7ed12",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Average cross-validation score: 0.96\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Average cross-validation score: {:.2f}\".format(tree_scores.mean()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "id": "a06d0504",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>fit_time</th>\n",
+       "      <th>score_time</th>\n",
+       "      <th>test_score</th>\n",
+       "      <th>train_score</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0.015261</td>\n",
+       "      <td>0.001627</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0.012284</td>\n",
+       "      <td>0.000839</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>1.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0.011741</td>\n",
+       "      <td>0.000856</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>0.999779</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0.005058</td>\n",
+       "      <td>0.000701</td>\n",
+       "      <td>0.841407</td>\n",
+       "      <td>1.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   fit_time  score_time  test_score  train_score\n",
+       "0  0.015261    0.001627    1.000000     1.000000\n",
+       "1  0.012284    0.000839    1.000000     1.000000\n",
+       "2  0.011741    0.000856    1.000000     0.999779\n",
+       "3  0.005058    0.000701    0.841407     1.000000"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Mean times and scores:\n",
+      " fit_time       0.011086\n",
+      "score_time     0.001006\n",
+      "test_score     0.960352\n",
+      "train_score    0.999945\n",
+      "dtype: float64\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.model_selection import cross_validate\n",
+    "\n",
+    "tree_res = cross_validate(tree_clf4, X, y, cv=4,\n",
+    "                     return_train_score=True)\n",
+    "tree_res_df = pd.DataFrame(tree_res)\n",
+    "display(tree_res_df)\n",
+    "print(\"Mean times and scores:\\n\", tree_res_df.mean())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "id": "57ef1648",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: 0.9998341350140986\n"
+     ]
+    }
+   ],
+   "source": [
+    "tree_clf4.fit(X, y)\n",
+    "print(\"Accuracy:\",metrics.accuracy_score(y, tree_clf2.predict(X)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "id": "cda3a8cd",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Average cross-validation score: 0.95\n"
+     ]
+    }
+   ],
+   "source": [
+    "#startified cv\n",
+    "from sklearn.model_selection import StratifiedKFold\n",
+    "tree_clf5 = DecisionTreeClassifier(max_depth=2, random_state=42)\n",
+    "skf = StratifiedKFold(n_splits=4)\n",
+    "tree_scores = cross_val_score(tree_clf5, X, y, scoring=\"accuracy\", cv=skf)\n",
+    "print(\"Average cross-validation score: {:.2f}\".format(tree_scores.mean()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 36,
+   "id": "89057b2d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: 0.9560457787361089\n"
+     ]
+    }
+   ],
+   "source": [
+    "tree_clf5.fit(X, y)\n",
+    "print(\"Accuracy:\",metrics.accuracy_score(y, tree_clf5.predict(X)))"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
